@@ -1,0 +1,22 @@
+{
+  "name": "natedb",
+  "version": "1.0.0",
+  "description": "",
+  "main": "executor.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RandomSeeded/NateDB.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RandomSeeded/NateDB/issues"
+  },
+  "homepage": "https://github.com/RandomSeeded/NateDB#readme",
+  "dependencies": {
+    "lodash": "^4.17.4"
+  }
+}
