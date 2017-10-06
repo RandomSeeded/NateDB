@@ -43,7 +43,7 @@ const pretendFileData = {
 
 const bufferSize = 1024;
 class FileScan {
-  constructor(_input, [filename], schema) {
+  constructor(_input, [filename], _schema) {
     // const fullFilePath = './whatevs.csv';
     const fullFilePath = './ml-20m/movies.csv';
     this.fd = fs.openSync(fullFilePath, 'r');
@@ -124,7 +124,7 @@ class Projection {
 };
 
 class Limit {
-  constructor(input, [limit], schema) {
+  constructor(input, [limit], _schema) {
     this.returned = 0;
     this.input = input;
     this.limit = +limit;
@@ -155,6 +155,21 @@ class Distinct {
     }
     this.lastRecord = nextRecord;
     return nextRecord;
+  }
+}
+
+const RecordsInMemory = 24;
+class Sort {
+  // We're going to do a sorta jacked up merge sort
+  constructor(input, _params, _schema) {
+    this.input = input;
+  }
+
+  next() {
+    let nextRecord = this.input.next();
+  }
+
+  close() {
   }
 }
 
