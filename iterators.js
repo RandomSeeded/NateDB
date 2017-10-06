@@ -98,7 +98,6 @@ class Projection {
     this.input = input;
     this.newSchema = newSchema;
     this.originalSchema = originalSchema;
-    // Don't recalculate for every single record. Instead create a mapping at this point of the fields you want
     const newSchemaByField = _.keyBy(newSchema);
     this.fieldsToKeep = _.reduce(originalSchema, (acc, fieldName, index) => {
       if (newSchemaByField[fieldName]) {
@@ -144,9 +143,25 @@ class Limit {
   }
 };
 
+class Distinct {
+  constructor(input, _params, _schema) {
+    this.input = input;
+  }
+
+  next() {
+    let nextRecord = this.input.next();
+    while (_.isEqual(nextRecord, this.lastRecord)) {
+      nextRecord = this.input.next();
+    }
+    this.lastRecord = nextRecord;
+    return nextRecord;
+  }
+}
+
 module.exports = {
   FileScan,
   Selection,
   Projection,
   Limit,
+  Distinct,
 };

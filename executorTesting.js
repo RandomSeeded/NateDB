@@ -3,6 +3,7 @@
 const executor = require('./executor');
 
 const testProjection = [
+  ["DISTINCT", []],
   ["LIMIT", ["10"]],
   ["PROJECTION", ["movieId", "title"]],
   // ["SELECTION", ["movieId", "EQUALS", "5000"]],
