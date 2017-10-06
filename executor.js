@@ -33,13 +33,13 @@ const iteratorMappings = {
   'FILESCAN': Scan,
 };
 
-function execute(representation) {
+function execute(representation, schema) {
   // Initialize all of the iterators
   const reversedRepresentation = _.reverse(representation);
   let parentNode = null;
   _.each(reversedRepresentation, ([operator, params]) => {
     const Iterator = iteratorMappings[operator];
-    const node = new Iterator(parentNode, params);
+    const node = new Iterator(parentNode, params, schema);
     parentNode = node;
   });
 

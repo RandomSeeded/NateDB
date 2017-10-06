@@ -1,5 +1,7 @@
 'use strict';
 
+const _ = require('lodash');
+
 // Standard input will be:
 // Children, { options }
 
@@ -8,14 +10,11 @@ const operatorMappings = {
   "EQUALS": (a, b) => a === b,
 };
 class Selection {
-  constructor(input, [field, operator, quantity]) {
+  constructor(input, [field, operator, quantity], schema) {
     this.input = input;
-    // this.predicate = predicate;
-    // Construct the predicate now
     this.predicate = record => {
-      // need to look up by field
-      // This needs to be improved
-      const fieldInRecord = record[0];
+      const pos = _.findIndex(schema, schemaField => schemaField === field);
+      const fieldInRecord = record[pos];
       return operatorMappings[operator](fieldInRecord, quantity);
     };
   }
@@ -40,7 +39,7 @@ const pretendFileData = {
   ],
 };
 class Scan {
-  constructor(_input, [fileName]) {
+  constructor(_input, [fileName], schema) {
     this.nextRecordIndex = 0;
     this.pretendFileData = pretendFileData[fileName];
   }
