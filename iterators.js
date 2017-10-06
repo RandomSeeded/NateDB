@@ -49,6 +49,8 @@ class Scan {
   }
 
   // What would we want to do on close? Clean up after ourselves. We wouldn't remove the data from memory, instead we'd remove any pointers we were storing...
+  // Does this even make sense in javascript land?
+  // What if it WAS a file? We'd have some buffers pointing to aspects of it that we could remove but they would be auto-GC'd anyways.
   close() {
     delete this.nextRecordIndex;
   }
