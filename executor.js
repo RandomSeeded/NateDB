@@ -35,7 +35,7 @@ function execute(representation, originalSchema) {
   // After all the iterators have been initialized, start grabbing tuples from the root node
   let next = parentNode.next();
   while (next !== 'EOF') {
-    console.log('output tuple', next);
+    console.log(next);
     next = parentNode.next();
   }
 }

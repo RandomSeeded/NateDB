@@ -67,7 +67,7 @@ class FileScan {
 
     if (nextRecordIsValid) {
       this.parsedRecordsOffset++;
-      return nextRecord;
+      return nextRecord.split(',');
     }
     
     const buffer = Buffer.alloc(bufferSize);
@@ -82,7 +82,7 @@ class FileScan {
 
     if (nextRecordIsValid2) {
       this.parsedRecordsOffset++;
-      return nextRecord2;
+      return nextRecord2.split(',');
     }
 
     return 'EOF';
