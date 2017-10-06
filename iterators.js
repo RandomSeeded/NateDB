@@ -1,6 +1,7 @@
 'use strict';
 
 const _ = require('lodash');
+const fs = require('fs');
 
 // Standard input will be:
 // Children, { options }
@@ -40,14 +41,51 @@ const pretendFileData = {
   ],
 };
 
-class Scan {
-  constructor(_input, [fileName], schema) {
+const bufferSize = 1024;
+class FileScan {
+  constructor(_input, [filename], schema) {
+    // const fullFilePath = './whatevs.csv';
+    const fullFilePath = './ml-20m/movies.csv';
+    this.fd = fs.openSync(fullFilePath, 'r');
     this.nextRecordIndex = 0;
-    this.pretendFileData = pretendFileData[fileName];
+    this.pretendFileData = pretendFileData[filename];
+
+    this.parsedRecords = [];
+    this.parsedRecordsOffset = 0;
+    this.fileOffset = 0;
+  }
+
+  static isValidRecord(record) {
+    // const isValid = _.indexOf(record, '\n') !== -1;
+    const isValid = record.indexOf('\n') !== -1 || record.indexOf('\r') !== -1;
+    return isValid;
   }
 
   next() {
-    return this.pretendFileData[this.nextRecordIndex++] || 'EOF';
+    const nextRecord = this.parsedRecords[this.parsedRecordsOffset] || '';
+    const nextRecordIsValid = FileScan.isValidRecord(nextRecord);
+
+    if (nextRecordIsValid) {
+      this.parsedRecordsOffset++;
+      return nextRecord;
+    }
+    
+    const buffer = Buffer.alloc(bufferSize);
+    fs.readSync(this.fd, buffer, 0, bufferSize, this.fileOffset);
+    const nextBlock = nextRecord + buffer.toString();
+    this.parsedRecords = _.compact(nextBlock.split('\n'));
+    this.parsedRecordsOffset = 0;
+    this.fileOffset += bufferSize;
+
+    const nextRecord2 = this.parsedRecords[this.parsedRecordsOffset] || '';
+    const nextRecordIsValid2 = FileScan.isValidRecord(nextRecord2);
+
+    if (nextRecordIsValid2) {
+      this.parsedRecordsOffset++;
+      return nextRecord2;
+    }
+
+    return 'EOF';
   }
 
   close() {
@@ -87,7 +125,7 @@ class Projection {
 };
 
 module.exports = {
-  Scan,
+  FileScan,
   Selection,
   Projection,
 };
