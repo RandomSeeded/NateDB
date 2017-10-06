@@ -124,8 +124,29 @@ class Projection {
   }
 };
 
+class Limit {
+  constructor(input, [limit], schema) {
+    this.returned = 0;
+    this.input = input;
+    this.limit = +limit;
+  }
+
+  next() {
+    if (this.returned === this.limit) {
+      return 'EOF';
+    }
+
+    this.returned++;
+    return this.input.next();
+  }
+
+  close() {
+  }
+};
+
 module.exports = {
   FileScan,
   Selection,
   Projection,
+  Limit,
 };
