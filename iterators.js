@@ -113,7 +113,7 @@ class Projection {
     }
 
     const projectedRecord = _.filter(nextRecord, (_value, index) => {
-      return _.has(this.fieldsToKeep, index);
+      return _.includes(this.fieldsToKeep, index);
     });
     return projectedRecord;
   }
