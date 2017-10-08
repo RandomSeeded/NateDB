@@ -221,26 +221,3 @@ module.exports = {
   Sort,
 };
 
-// YE OLDE NOT WORKING CODE
-//
-// It was a good effort but too much of a pain.
-//
-//     while (nextInput !== 'EOF') {
-//       this.buffer.push(nextInput);
-//       
-//       // Also need to handle case where have leftovers
-//       // Factor this out into a function and call it
-//       if (_.size(this.buffer) === this.maxCachedRows) {
-//         const filename = `${this.dirPrefix}${this.cacheIndex}`;
-//         let cacheOffset = 0;
-//         const fd = fs.openSync(filename, 'w');
-//         _.each(this.buffer, row => {
-//           const rowStr = pad(row.toString(), this.maxRowWidth);
-//           fs.writeSync(fd, rowStr);
-//         });
-//         fs.closeSync(fd);
-//         this.cacheIndex++;
-//         this.buffer = [];
-//       }
-//       nextInput = this.input.next();
-//     }
