@@ -3,11 +3,10 @@
 const _ = require('lodash');
 const fs = require('fs');
 
-// Standard input will be:
-// Children, { options }
-
 const selectionOperatorMappings = {
   "EQUALS": (a, b) => a === b,
+  "GREATER_THAN": (a, b) => a >= b,
+  "LESS_THAN": (a, b) => a <= b,
 };
 class Selection {
   constructor(input, [field, operator, quantity], schema) {
@@ -31,24 +30,13 @@ class Selection {
   }
 };
 
-const pretendFileData = {
-  'movies': [
-    ['5000', 'of data', 'can go here'],
-    ['5000', 'of data', 'or here too'],
-    ['5000', 'of data', 'can go here'],
-    ['5000', 'of data', 'can go here'],
-    ['anything sorts', 'whatevs yo', 'yoooo'],
-  ],
-};
-
 const bufferSize = 1024;
 class FileScan {
   constructor(_input, [filename], _schema) {
     // const fullFilePath = './whatevs.csv';
-    const fullFilePath = './ml-20m/movies.csv';
+    const fullFilePath = `./ml-20m/${filename}.csv`;
     this.fd = fs.openSync(fullFilePath, 'r');
     this.nextRecordIndex = 0;
-    this.pretendFileData = pretendFileData[filename];
 
     this.parsedRecords = [];
     this.parsedRecordsOffset = 0;
@@ -166,7 +154,6 @@ class Sort {
     this.buffer = [];
     this.cacheIndex = 0;
     this.maxCachedRows = 1024;
-    // this.dirPrefix = `./tmp/${Date.now()}/`; // Use this because don't have to worry about cross run issues
     this.dirPrefix = `./tmp/`
     if (!fs.existsSync(this.dirPrefix)) {
       fs.mkdirSync(this.dirPrefix);
