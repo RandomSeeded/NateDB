@@ -166,7 +166,7 @@ class Sort {
     this.isSorted = false;
     this.buffer = [];
     this.cacheIndex = 0;
-    this.maxBufferSize = 64;
+    this.maxCachedRows = 64;
     this.dirPrefix = './tmp/';
   }
 
@@ -188,9 +188,14 @@ class Sort {
     let nextInput = this.input.next();
     while (nextInput !== 'EOF') {
       this.buffer.push(nextInput);
-      
-      if (_.size(this.buffer) === this.maxBufferSize) {
-        fs.writeFileSync(`${this.dirPrefix}${this.cacheIndex}`, this.buffer);
+      if (_.size(this.buffer) === this.maxCachedRows) {
+        const filename = `${this.dirPrefix}${this.cacheIndex}`;
+        const fd = fs.openSync(filename, 'w');
+        _.each(this.buffer, row => {
+          const rowStr = row.toString() + '\n';
+          fs.writeSync(fd, rowStr);
+        });
+        fs.closeSync(fd);
         this.cacheIndex++;
         this.buffer = [];
       }
@@ -198,9 +203,8 @@ class Sort {
     }
 
     // How to merge files? Reading things in is such a PITA. SO MUCH EASIER if you had fixed widths; you could read in a set number of rows...
-
+    // I'm going to make this the case! We are going to write each row to disc at a given offset
     return 'EOF';
-
   }
 
   // Should probably clean up all my temporary files...
@@ -216,3 +220,27 @@ module.exports = {
   Distinct,
   Sort,
 };
+
+// YE OLDE NOT WORKING CODE
+//
+// It was a good effort but too much of a pain.
+//
+//     while (nextInput !== 'EOF') {
+//       this.buffer.push(nextInput);
+//       
+//       // Also need to handle case where have leftovers
+//       // Factor this out into a function and call it
+//       if (_.size(this.buffer) === this.maxCachedRows) {
+//         const filename = `${this.dirPrefix}${this.cacheIndex}`;
+//         let cacheOffset = 0;
+//         const fd = fs.openSync(filename, 'w');
+//         _.each(this.buffer, row => {
+//           const rowStr = pad(row.toString(), this.maxRowWidth);
+//           fs.writeSync(fd, rowStr);
+//         });
+//         fs.closeSync(fd);
+//         this.cacheIndex++;
+//         this.buffer = [];
+//       }
+//       nextInput = this.input.next();
+//     }
