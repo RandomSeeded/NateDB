@@ -56,7 +56,6 @@ class FileScan {
   }
 
   static isValidRecord(record) {
-    // const isValid = _.indexOf(record, '\n') !== -1;
     const isValid = record.indexOf('\n') !== -1 || record.indexOf('\r') !== -1;
     return isValid;
   }
@@ -172,13 +171,17 @@ class Sort {
     if (!fs.existsSync(this.dirPrefix)) {
       fs.mkdirSync(this.dirPrefix);
     }
-    const sortIndex = _.findIndex(schema, schemaField => schemaField === sortField);
-    this.sortIndex = sortIndex;
+    const fieldPositionInRecord = _.findIndex(schema, schemaField => schemaField === sortField);
+    this.fieldPositionInRecord = fieldPositionInRecord;
+
+    this.isSorted = false;
+    this.sortedOffset = 0;
+    this.sortedCache;
   }
 
   sortFn(a, b) {
-    const fieldA = _.trim(a[this.sortIndex], "");
-    const fieldB = _.trim(b[this.sortIndex], "");
+    const fieldA = _.trim(a[this.fieldPositionInRecord], "\"");
+    const fieldB = _.trim(b[this.fieldPositionInRecord], "\"");
     if (fieldA <= fieldB) {
       return -1;
     }
@@ -187,7 +190,11 @@ class Sort {
 
   next() {
     if (this.isSorted) {
-      return;
+      const nextRecord = this.sortedCache[this.sortedOffset++];
+      if (nextRecord) {
+        return _.split(nextRecord, ',');
+      }
+      return 'EOF';
     }
 
     // Factor out common code you fuck
@@ -221,9 +228,12 @@ class Sort {
     // We now have all our small files and need to merge them into one big sorted file
     // Grab two files, merge em together. Do that until you reach the end, then do it again
     // Gonna be recursive
-    this.mergeCaches(_.range(this.cacheIndex));
+    const sortedFile = this.mergeCaches(_.range(this.cacheIndex));
+    this.isSorted = true;
 
-    return 'EOF';
+    // TODO (nw): transition this to not be read into buffer
+    this.sortedCache = fs.readFileSync(`${this.dirPrefix}${sortedFile}`).toString().split('\n');
+    return _.split(this.sortedCache[this.sortedOffset++], ',');
   }
 
   close() {
@@ -233,20 +243,25 @@ class Sort {
   mergeCaches(filenames) {
     const numFiles = _.size(filenames);
     if (numFiles === 1) {
-      return;
+      return _.first(filenames);
     }
 
     const totalIterations = Math.ceil(numFiles / 2);
+    const outFilenames = [];
     _.times(totalIterations, iter => {
       const f1 = filenames[iter*2];
       const f2 = filenames[iter*2+1];
-      // TODO (nw): handle questions around files to big to fit into memory here
-      // TODO (nw): handle possibility that file2 doesnt exist here
+
+      if (!f2) {
+        return outFilenames.push(f1);
+      }
+
+      // TODO (nw): handle questions around files to big to fit into memory here, aka read by chunk
       const records1 = _.split(fs.readFileSync(`${this.dirPrefix}${f1}`).toString(), '\r\n');
       const records2 = _.split(fs.readFileSync(`${this.dirPrefix}${f2}`).toString(), '\r\n');
 
-      const outFileName = `${f1}-${f2}`;
-      const fd = fs.openSync(`${this.dirPrefix}${outFileName}`, 'w');
+      const outFilename = `${f1}-${f2}`;
+      const fd = fs.openSync(`${this.dirPrefix}${outFilename}`, 'w');
 
       let r1Index = 0;
       let r2Index = 0;
@@ -267,7 +282,11 @@ class Sort {
         record1 = _.trim(records1[r1Index]);
         record2 = _.trim(records2[r2Index]);
       }
+
+      outFilenames.push(outFilename);
     });
+
+    return this.mergeCaches(outFilenames);
   }
 }
 
