@@ -2,7 +2,14 @@
 
 const _ = require('lodash');
 
-const { FileScan, Selection, Projection, Limit, Distinct } = require('./iterators');
+const { 
+  FileScan,
+  Selection,
+  Projection,
+  Limit,
+  Distinct,
+  Sort,
+} = require('./iterators');
 
 const pretendFileData = [
   [1,'a',2,'whatevs yo'],
@@ -16,6 +23,7 @@ const iteratorMappings = {
   'FILESCAN': FileScan,
   'LIMIT': Limit,
   'DISTINCT': Distinct,
+  'SORT': Sort,
 };
 
 function execute(representation, originalSchema) {

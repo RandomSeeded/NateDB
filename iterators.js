@@ -163,12 +163,47 @@ class Sort {
   // We're going to do a sorta jacked up merge sort
   constructor(input, _params, _schema) {
     this.input = input;
+    this.isSorted = false;
+    this.buffer = [];
+    this.cacheIndex = 0;
+    this.maxBufferSize = 64;
+    this.dirPrefix = './tmp/';
   }
 
   next() {
-    let nextRecord = this.input.next();
+    // Strategy here:
+    // If we're not sorted, first time we call next we have to sort everything
+    // If we are sorted, we just return the next thing
+    //
+    // What does sorting look like?
+    // We call next repeatedly, and dump things into a bunch of files
+    // After we've dumped, then we merge into single master file
+    // After we merge, then we start yielding from the file
+    // Does this basically mean re-implementing file-scan? Yeah basically. FML.
+    // BUT we could read chunks of exactly the size we write which would make reading easier but be space-inefficient...
+    if (this.isSorted) {
+      return;
+    }
+
+    let nextInput = this.input.next();
+    while (nextInput !== 'EOF') {
+      this.buffer.push(nextInput);
+      
+      if (_.size(this.buffer) === this.maxBufferSize) {
+        fs.writeFileSync(`${this.dirPrefix}${this.cacheIndex}`, this.buffer);
+        this.cacheIndex++;
+        this.buffer = [];
+      }
+      nextInput = this.input.next();
+    }
+
+    // How to merge files? Reading things in is such a PITA. SO MUCH EASIER if you had fixed widths; you could read in a set number of rows...
+
+    return 'EOF';
+
   }
 
+  // Should probably clean up all my temporary files...
   close() {
   }
 }
@@ -179,4 +214,5 @@ module.exports = {
   Projection,
   Limit,
   Distinct,
+  Sort,
 };
