@@ -8,7 +8,7 @@ const testProjection = [
   ["PROJECTION", ["movieId", "title"]],
   // ["SELECTION", ["movieId", "EQUALS", "5000"]],
   ["SORT", ["title"]],
-  // ["LIMIT", ["8"]],
+  ["LIMIT", ["5196"]],
   ["FILESCAN", ["movies"]]
 ];
 

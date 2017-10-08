@@ -160,35 +160,42 @@ class Distinct {
 
 const RecordsInMemory = 24;
 class Sort {
-  // We're going to do a sorta jacked up merge sort
-  constructor(input, _params, _schema) {
+  // TODO (nw): handle multiple fields to sort by
+  constructor(input, [sortField], schema) {
     this.input = input;
     this.isSorted = false;
     this.buffer = [];
     this.cacheIndex = 0;
-    this.maxCachedRows = 64;
-    this.dirPrefix = './tmp/';
+    this.maxCachedRows = 1024;
+    // this.dirPrefix = `./tmp/${Date.now()}/`; // Use this because don't have to worry about cross run issues
+    this.dirPrefix = `./tmp/`
+    if (!fs.existsSync(this.dirPrefix)) {
+      fs.mkdirSync(this.dirPrefix);
+    }
+    const sortIndex = _.findIndex(schema, schemaField => schemaField === sortField);
+    this.sortIndex = sortIndex;
+  }
+
+  sortFn(a, b) {
+    const fieldA = _.trim(a[this.sortIndex], "");
+    const fieldB = _.trim(b[this.sortIndex], "");
+    if (fieldA <= fieldB) {
+      return -1;
+    }
+    return 1;
   }
 
   next() {
-    // Strategy here:
-    // If we're not sorted, first time we call next we have to sort everything
-    // If we are sorted, we just return the next thing
-    //
-    // What does sorting look like?
-    // We call next repeatedly, and dump things into a bunch of files
-    // After we've dumped, then we merge into single master file
-    // After we merge, then we start yielding from the file
-    // Does this basically mean re-implementing file-scan? Yeah basically. FML.
-    // BUT we could read chunks of exactly the size we write which would make reading easier but be space-inefficient...
     if (this.isSorted) {
       return;
     }
 
+    // Factor out common code you fuck
     let nextInput = this.input.next();
     while (nextInput !== 'EOF') {
       this.buffer.push(nextInput);
       if (_.size(this.buffer) === this.maxCachedRows) {
+        this.buffer.sort(this.sortFn.bind(this));
         const filename = `${this.dirPrefix}${this.cacheIndex}`;
         const fd = fs.openSync(filename, 'w');
         _.each(this.buffer, row => {
@@ -201,14 +208,66 @@ class Sort {
       }
       nextInput = this.input.next();
     }
+    // The repeated code down here handles leftovers
+    const filename = `${this.dirPrefix}${this.cacheIndex}`;
+    const fd = fs.openSync(filename, 'w');
+    _.each(this.buffer, row => {
+      const rowStr = row.toString() + '\n';
+      fs.writeSync(fd, rowStr);
+    });
+    fs.closeSync(fd);
+    this.cacheIndex++;
 
-    // How to merge files? Reading things in is such a PITA. SO MUCH EASIER if you had fixed widths; you could read in a set number of rows...
-    // I'm going to make this the case! We are going to write each row to disc at a given offset
+    // We now have all our small files and need to merge them into one big sorted file
+    // Grab two files, merge em together. Do that until you reach the end, then do it again
+    // Gonna be recursive
+    this.mergeCaches(_.range(this.cacheIndex));
+
     return 'EOF';
   }
 
-  // Should probably clean up all my temporary files...
   close() {
+    this.rmdirSync(this.dirPrefix);
+  }
+
+  mergeCaches(filenames) {
+    const numFiles = _.size(filenames);
+    if (numFiles === 1) {
+      return;
+    }
+
+    const totalIterations = Math.ceil(numFiles / 2);
+    _.times(totalIterations, iter => {
+      const f1 = filenames[iter*2];
+      const f2 = filenames[iter*2+1];
+      // TODO (nw): handle questions around files to big to fit into memory here
+      // TODO (nw): handle possibility that file2 doesnt exist here
+      const records1 = _.split(fs.readFileSync(`${this.dirPrefix}${f1}`).toString(), '\r\n');
+      const records2 = _.split(fs.readFileSync(`${this.dirPrefix}${f2}`).toString(), '\r\n');
+
+      const outFileName = `${f1}-${f2}`;
+      const fd = fs.openSync(`${this.dirPrefix}${outFileName}`, 'w');
+
+      let r1Index = 0;
+      let r2Index = 0;
+      let record1 = _.trim(records1[r1Index]);
+      let record2 = _.trim(records2[r2Index]);
+      while (record1 || record2) {
+        const splitR1 = _.split(record2, ',');
+        const splitR2 = _.split(record1, ',');
+        const sortOrder = this.sortFn(splitR1, splitR2);
+        if (record2 && (!record1 || sortOrder === -1)) {
+          r2Index++;
+          fs.writeSync(fd, record2 + '\n');
+        } else {
+          r1Index++;
+          fs.writeSync(fd, record1 + '\n');
+        }
+
+        record1 = _.trim(records1[r1Index]);
+        record2 = _.trim(records2[r2Index]);
+      }
+    });
   }
 }
 
