@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/RandomSeeded/NateDB#readme",
   "dependencies": {
+    "assert": "^1.4.1",
     "csv-string": "^2.3.2",
     "lodash": "^4.17.4"
   }
